@@ -1,4 +1,4 @@
-#iGetWretch V0.51b UNIX updated 2010/5/24
+#iGetWretch V0.52b UNIX updated 2011/11/18
 #!/bin/bash
 
 #Get album address
@@ -38,9 +38,9 @@ else
 	read DELAY
 	NUM_OF_ITEM=$[$END_NUM - $BEGIN_NUM + 1]
 fi
-echo "$BEGIN is"$BEGIN_NUM
-echo "$END is"$END_NUM
-echo "$NUM_OF_ITEM is"$NUM_OF_ITEM
+echo "BEGIN is"$BEGIN_NUM
+echo "END is"$END_NUM
+echo "NUM_OF_ITEM is "$NUM_OF_ITEM
 
 
 
@@ -49,9 +49,9 @@ echo "$NUM_OF_ITEM is"$NUM_OF_ITEM
 #Fetch and analyze URL to get each album page
 curl -e "http://www.wretch.cc" -o wretch_tmp.html $IN_URL
 SUCCESS=`cat wretch_tmp.html | grep '<a href="./show.php?' | wc -c`
-echo "$SUCCESS is "$SUCCESS
+echo "SUCCESS is "$SUCCESS
 
-PIC_URL=`grep "&p=0\"" ./wretch_tmp.html | grep "><a href" |\
+PIC_URL=`grep "&p=0&sp=0\"" ./wretch_tmp.html | grep "><a href" |\
 sed 's/^.*><a href=".//g' | sed 's/">.*$//g'`
 echo "PIC_URL is "$PIC_URL
 NEXT_PAGE=`echo "http://www.wretch.cc/album"$PIC_URL`
@@ -65,7 +65,7 @@ i=$BEGIN_NUM
 while [ "$i" -le "$END_NUM" ]
 do
 	echo "in loop, i= "$i
-	PIC_URL=`grep "&p="$i"\"" ./wretch_tmp.html |\
+	PIC_URL=`grep "&p="$i"&sp=0\"" ./wretch_tmp.html |\
 	grep "><a href" |\
 	sed 's/^.*><a href=".//g' | sed 's/">.*$//g'`
 	echo "PIC_URL is "$PIC_URL
@@ -80,7 +80,6 @@ do
 		sed "s/^.*src='//g"  | sed "s/' border=0.*$//g"`
 		echo "JPG_URL="$JPG_URL
 		PROG=$[$i + 1]
-		echo "0 Downloading $[$PROG - $BEGIN_NUM] of $NUM_OF_ITEM" >&3
 		echo "== Downloading item "\$[$PROG - $BEGIN_NUM]" of "  $NUM_OF_ITEM "=="
 		sleep $DELAY
 		curl -e $IN_URL -o $[$PROG - $BEGIN_NUM]".jpg" $JPG_URL
@@ -93,7 +92,6 @@ do
 			FLV_URL=`grep '"flashvars","' ./wretch_tmp2.html |\
 			sed 's/^.*file=//g' | sed 's/",.*$//g'`
 			PROG=$[$i + 1]
-			echo "0 Downloading $[$PROG - $BEGIN_NUM] of $NUM_OF_ITEM" >&3
 		 	echo "== Downloading item "$[$PROG - $BEGIN_NUM] " of "  $NUM_OF_ITEM "=="
 			sleep $DELAY
 			curl -e "http://www.wretch.cc" -o $[$PROG - $BEGIN_NUM]".flv" $FLV_URL
@@ -103,10 +101,10 @@ do
 			EXIST=`grep ".mp3" ./wretch_tmp2.html | wc -c`
 			if [ "$EXIST" -ne "0" ]; then
 				#Fetch  and analyze music pages to get the actual URL of video
-				MP3_URL="h"`grep ".mp3" ./wretch_tmp2.html | grep "addVariable" |\
-				sed 's/^.*", ".//g' | sed 's/").*//g'`
+				MP3_URL=`grep ".mp3" ./wretch_tmp2.html | grep "file:" |\
+				sed 's/^.*: .//g' | sed 's/",.*//g'`
+				echo "MP3_URL="$MP3_URL
 				PROG=$[$i + 1]
-				echo "0 Downloading $[$PROG - $BEGIN_NUM] of $NUM_OF_ITEM" >&3
 		 		echo "== Downloading item "$[$PROG - $BEGIN_NUM] " of "  $NUM_OF_ITEM "=="
 				sleep $DELAY
 				curl -e "http://www.wretch.cc" -o $[$PROG - $BEGIN_NUM]".mp3" $MP3_URL
@@ -115,7 +113,7 @@ do
 				#Go to next album page
 				PAGE=$[$PAGE + 1]
 				curl -e "http://www.wretch.cc" -o wretch_tmp.html $IN_URL"&page="$PAGE
-				EXIST=`grep "&p="$i"\"" ./wretch_tmp.html | wc -c`
+				EXIST=`grep "&p="$i"&sp=0\"" ./wretch_tmp.html | wc -c`
 				#No more photos
 				if [ "$EXIST" -eq "0" ]; then
 					break
@@ -126,9 +124,9 @@ do
 done
 
 
-rm ./wretch_album.html
-rm ./wretch_tmp.html
-rm ./wretch_tmp2.html
+#rm ./wretch_album.html
+#rm ./wretch_tmp.html
+#rm ./wretch_tmp2.html
 if [ "$SUCCESS" -eq "0" ]; then
 	echo "Album is Protected!"
 else
