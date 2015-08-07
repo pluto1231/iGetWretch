@@ -1,4 +1,4 @@
-#iGetWretch V0.52b UNIX updated 2011/11/18
+#iGetWretch V0.53b UNIX updated 2012/09/05
 #!/bin/bash
 
 #Get album address
@@ -51,7 +51,18 @@ curl -e "http://www.wretch.cc" -o wretch_tmp.html $IN_URL
 SUCCESS=`cat wretch_tmp.html | grep '<a href="./show.php?' | wc -c`
 echo "SUCCESS is "$SUCCESS
 
-PIC_URL=`grep "&p=0&sp=0\"" ./wretch_tmp.html | grep "><a href" |\
+PIC_URL=`grep "&p=0&sp=1\"" ./wretch_tmp.html | grep "><a href" |\
+sed 's/^.*><a href=".//g' | sed 's/">.*$//g'`
+echo "PIC_URL is "$PIC_URL
+SP_COUNT=`echo $PIC_URL | wc -c`
+echo "SP_COUNT= "$SP_COUNT
+if [ "$SP_COUNT" -ge "3" ]; then
+	SP=1
+else
+	SP=0
+fi
+echo "SP= "$SP
+PIC_URL=`grep "&p=0&sp=$SP\"" ./wretch_tmp.html | grep "><a href" |\
 sed 's/^.*><a href=".//g' | sed 's/">.*$//g'`
 echo "PIC_URL is "$PIC_URL
 NEXT_PAGE=`echo "http://www.wretch.cc/album"$PIC_URL`
@@ -65,7 +76,7 @@ i=$BEGIN_NUM
 while [ "$i" -le "$END_NUM" ]
 do
 	echo "in loop, i= "$i
-	PIC_URL=`grep "&p="$i"&sp=0\"" ./wretch_tmp.html |\
+	PIC_URL=`grep "&p="$i"&sp=$SP\"" ./wretch_tmp.html |\
 	grep "><a href" |\
 	sed 's/^.*><a href=".//g' | sed 's/">.*$//g'`
 	echo "PIC_URL is "$PIC_URL
@@ -73,11 +84,27 @@ do
 	echo "NEXT_PAGE is "$NEXT_PAGE
 	#Fetch and analyze album pages to get URL of pages containing each photo
 	curl -e "http://www.wretch.cc" -o wretch_tmp2.html  $NEXT_PAGE
-	EXIST=`grep 'DisplayImage' ./wretch_tmp2.html | wc -c`
+	EXIST=`grep 'displayimg' ./wretch_tmp2.html | wc -c`
+	echo "EXIST is "$EXIST
+	if [ "$EXIST" -ne "0" ]; then
+		DISP_IMG="displayimg"
+	else
+		EXIST=`grep 'DisplayImage' ./wretch_tmp2.html | wc -c`
+		if [ "$EXIST" -ne "0" ]; then
+			DISP_IMG="DisplayImage"
+		fi
+	fi
+	echo "DISP_IMG= "$DISP_IMG
 	if [ "$EXIST" -ne "0" ]; then
 		#Fetch and analyze photo pages to get the actual URL of photo
-		JPG_URL=`grep 'DisplayImage' ./wretch_tmp2.html |\
-		sed "s/^.*src='//g"  | sed "s/' border=0.*$//g"`
+		JPG_URL=`grep $DISP_IMG ./wretch_tmp2.html |\
+		sed "s/^.*src='//g"  | sed "s/' alt=.*$//g"`
+		BORDER_EXIST=`echo $JPG_URL | grep 'border=0' | wc -c`
+		echo "BORDER_EXIST= "$BORDER_EXIST
+		if [ "$BORDER_EXIST" -ne "0" ]; then
+			JPG_URL=`grep $DISP_IMG ./wretch_tmp2.html |\
+			sed "s/^.*src='//g"  | sed "s/' border=0.*$//g"`
+		fi
 		echo "JPG_URL="$JPG_URL
 		PROG=$[$i + 1]
 		echo "== Downloading item "\$[$PROG - $BEGIN_NUM]" of "  $NUM_OF_ITEM "=="
@@ -113,7 +140,7 @@ do
 				#Go to next album page
 				PAGE=$[$PAGE + 1]
 				curl -e "http://www.wretch.cc" -o wretch_tmp.html $IN_URL"&page="$PAGE
-				EXIST=`grep "&p="$i"&sp=0\"" ./wretch_tmp.html | wc -c`
+				EXIST=`grep "&p="$i"&sp=$SP\"" ./wretch_tmp.html | wc -c`
 				#No more photos
 				if [ "$EXIST" -eq "0" ]; then
 					break
