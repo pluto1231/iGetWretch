@@ -1,4 +1,4 @@
-#iGetWretch V0.51b updated 2010/1/7
+#iGetWretch V0.52b updated 2011/11/19
 #!/bin/bash
 CD="CocoaDialog.app/Contents/MacOS/CocoaDialog"
 #Get album address
@@ -41,9 +41,9 @@ else
 	DELAY=`echo $rv4 | sed 's/^.*1\ //g'`
 	NUM_OF_ITEM=$[$END_NUM - $BEGIN_NUM + 1]
 fi
-echo "$BEGIN is"$BEGIN_NUM
-echo "$END is"$END_NUM
-echo "$NUM_OF_ITEM is"$NUM_OF_ITEM
+echo "BEGIN is"$BEGIN_NUM
+echo "END is"$END_NUM
+echo "NUM_OF_ITEM is"$NUM_OF_ITEM
 
 
 
@@ -66,7 +66,7 @@ echo "$SUCCESS is "$SUCCESS
 #echo "rv6 is "$rv6
 #cp $rv6 ./wretch_tmp.html
 
-PIC_URL=`grep "&p=0\"" ./wretch_tmp.html | grep "><a href" |\
+PIC_URL=`grep "&p=0&sp=0\"" ./wretch_tmp.html | grep "><a href" |\
 sed 's/^.*><a href=".//g' | sed 's/">.*$//g'`
 echo "PIC_URL is "$PIC_URL
 NEXT_PAGE=`echo "http://www.wretch.cc/album"$PIC_URL`
@@ -82,7 +82,7 @@ exec 3<> /tmp/hpipe
 while [ "$i" -le "$END_NUM" ]
 do
 	echo "in loop, i= "$i
-	PIC_URL=`grep "&p="$i"\"" ./wretch_tmp.html |\
+	PIC_URL=`grep "&p="$i"&sp=0\"" ./wretch_tmp.html |\
 	grep "><a href" |\
 	sed 's/^.*><a href=".//g' | sed 's/">.*$//g'`
 	echo "PIC_URL is "$PIC_URL
@@ -120,8 +120,8 @@ do
 			EXIST=`grep ".mp3" ./wretch_tmp2.html | wc -c`
 			if [ "$EXIST" -ne "0" ]; then
 				#Fetch  and analyze music pages to get the actual URL of video
-				MP3_URL="h"`grep ".mp3" ./wretch_tmp2.html | grep "addVariable" |\
-				sed 's/^.*", ".//g' | sed 's/").*//g'`
+				MP3_URL=`grep ".mp3" ./wretch_tmp2.html | grep "file:" |\
+				sed 's/^.*: .//g' | sed 's/",.*//g'`
 				PROG=$[$i + 1]
 				echo "0 Downloading $[$PROG - $BEGIN_NUM] of $NUM_OF_ITEM" >&3
 		 		echo "================= Downloading item "$[$PROG - $BEGIN_NUM] " of "  $NUM_OF_ITEM "================="
@@ -132,7 +132,7 @@ do
 				#Go to next album page
 				PAGE=$[$PAGE + 1]
 				curl -e "http://www.wretch.cc" -o wretch_tmp.html $IN_URL"&page="$PAGE
-				EXIST=`grep "&p="$i"\"" ./wretch_tmp.html | wc -c`
+				EXIST=`grep "&p="$i"&sp=0\"" ./wretch_tmp.html | wc -c`
 				#No more photos
 				if [ "$EXIST" -eq "0" ]; then
 					break
