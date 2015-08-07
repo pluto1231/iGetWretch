@@ -1,4 +1,4 @@
-#iGetWretch V0.5b updated 2009/7/24
+#iGetWretch V0.51b updated 2010/1/7
 #!/bin/bash
 CD="CocoaDialog.app/Contents/MacOS/CocoaDialog"
 #Get album address
@@ -100,7 +100,7 @@ do
 		echo "0 Downloading $[$PROG - $BEGIN_NUM] of $NUM_OF_ITEM" >&3
 		echo "================= Downloading item "$[$PROG - $BEGIN_NUM]" of "  $NUM_OF_ITEM "================="
 		sleep $DELAY
-		curl -e $IN_URL -O $JPG_URL
+		curl -e $IN_URL -o $[$PROG - $BEGIN_NUM]".jpg" $JPG_URL
 		i=$[$i + 1]
 	else
 		#No photo -> video?
@@ -113,7 +113,7 @@ do
 			echo "0 Downloading $[$PROG - $BEGIN_NUM] of $NUM_OF_ITEM" >&3
 		 	echo "================= Downloading item "$[$PROG - $BEGIN_NUM] " of "  $NUM_OF_ITEM "================="
 			sleep $DELAY
-			curl -e "http://www.wretch.cc" -O $FLV_URL
+			curl -e "http://www.wretch.cc" -o $[$PROG - $BEGIN_NUM]".flv" $FLV_URL
 			i=$[$i + 1]
 		else
 			#No photo and video -> music?
@@ -126,7 +126,7 @@ do
 				echo "0 Downloading $[$PROG - $BEGIN_NUM] of $NUM_OF_ITEM" >&3
 		 		echo "================= Downloading item "$[$PROG - $BEGIN_NUM] " of "  $NUM_OF_ITEM "================="
 				sleep $DELAY
-				curl -e "http://www.wretch.cc" -O $MP3_URL
+				curl -e "http://www.wretch.cc" -o $[$PROG - $BEGIN_NUM]".mp3" $MP3_URL
 				i=$[$i + 1]
 			else
 				#Go to next album page
@@ -154,3 +154,4 @@ if [ "$SUCCESS" -eq "0" ]; then
 else
 	$1/Contents/Resources/$CD bubble --debug --title "Done" --text "All items have been successfully downloaded!"
 fi
+open ./
