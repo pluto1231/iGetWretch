@@ -1,10 +1,10 @@
-#iGetWretch V0.51b updated 2010/1/7
+#iGetWretch V0.51b UNIX updated 2010/5/24
 #!/bin/bash
-CD="CocoaDialog.app/Contents/MacOS/CocoaDialog"
+
 #Get album address
-rv=`$1/Contents/Resources/$CD standard-inputbox --title "Wretch Album Address" --no-newline \\
-    --informative-text "Enter Album address"` 
-IN_URL=`echo $rv | sed 's/^.*1\ //g'`
+
+echo "Enter Album address"
+read IN_URL
 USER=`echo $IN_URL | sed  's/^.*id=//g' | sed 's/&book=.*$//g'`
 ALBUM=`echo $IN_URL | sed  's/^.*book=//g'`
 
@@ -16,29 +16,26 @@ cd ./$USER"_"$ALBUM
 
 #Detect number of items in the album
 curl -e "http://www.wretch.cc" -o wretch_album.html "http://www.wretch.cc/album/"$USER
-NUM_OF_ITEM=`grep -A 7 '&book='$ALBUM'"' ./wretch_album.html | grep -A 1 '<font class="small-c">' |\
+NUM_OF_ITEM=`grep -A 7 '&book='$ALBUM'"' ./wretch_album.html |\
+grep -A 1 '<font class="small-c">' |\
 grep ' </font>' | sed 's/[^0-9]*//' | sed 's/[^0-9].*$//g'`
 echo $NUM_OF_ITEM" items in album"
 #Set Mode, BASIC: $MODE=0; Expert: $MODE=1
-rv5=`$1/Contents/Resources/$CD standard-dropdown --title "Mode" \\
-    --text "Choose Mode: " --items "Basic" "Expert"`
-MODE=`echo $rv5 | sed 's/^.*1\ //g'`
+echo "Enter mode, 0=Basic, 1=Expert"    
+read MODE
 if [ "$MODE" -eq "0" ]; then
 	BEGIN_NUM=0
 	END_NUM=$[$NUM_OF_ITEM - 1]
 	DELAY=0
 else
 	#Get begin and end numbers
-	rv2=`$1/Contents/Resources/$CD standard-inputbox --title "Photo Begin No." --no-newline \\
-    --informative-text "Enter begin number(0 is the first item)"` 
-	BEGIN_NUM=`echo $rv2 | sed 's/^.*1\ //g'`    
-	rv3=`$1/Contents/Resources/$CD standard-inputbox --title "Photo End No." --no-newline \\
-    --informative-text "Enter end number"`
-	END_NUM=`echo $rv3 | sed 's/^.*1\ //g'` 
+    echo "Enter begin number(0 is the first item)"
+	read BEGIN_NUM    
+	echo "Enter end number"
+	read END_NUM 
 	#Get delay time    
-	rv4=`$1/Contents/Resources/$CD standard-inputbox --title "Delay Time" --no-newline \\
-    --informative-text "Enter delay time(second)"`
-	DELAY=`echo $rv4 | sed 's/^.*1\ //g'`
+	echo "Enter delay time(second)"
+	read DELAY
 	NUM_OF_ITEM=$[$END_NUM - $BEGIN_NUM + 1]
 fi
 echo "$BEGIN is"$BEGIN_NUM
@@ -47,24 +44,12 @@ echo "$NUM_OF_ITEM is"$NUM_OF_ITEM
 
 
 
-#Create and  link pipe
-rm -f /tmp/hpipe
-mkfifo /tmp/hpipe
 
 
 #Fetch and analyze URL to get each album page
 curl -e "http://www.wretch.cc" -o wretch_tmp.html $IN_URL
 SUCCESS=`cat wretch_tmp.html | grep '<a href="./show.php?' | wc -c`
 echo "$SUCCESS is "$SUCCESS
-#if [ "$SUCCESS" -eq "0" ]; then
-#	rv6=`$1/Contents/Resources/$CD fileselect \
-#	--title "Protected album"\
-#  	--text "Input album html file: " \
-#  	--with-extensions .htm .html`
-#$1/Contents/Resources/$CD bubble --debug --title "Done" --text "All items have been successfully downloaded!"
-#fi
-#echo "rv6 is "$rv6
-#cp $rv6 ./wretch_tmp.html
 
 PIC_URL=`grep "&p=0\"" ./wretch_tmp.html | grep "><a href" |\
 sed 's/^.*><a href=".//g' | sed 's/">.*$//g'`
@@ -77,8 +62,6 @@ HEADER=`echo $NEXT_PAGE | sed 's/&f=.*$//g'`
 echo "HEADER is "$HEADER
 PAGE=1
 i=$BEGIN_NUM
-$1/Contents/Resources/$CD progressbar --title "Progress" --indeterminate < /tmp/hpipe &
-exec 3<> /tmp/hpipe
 while [ "$i" -le "$END_NUM" ]
 do
 	echo "in loop, i= "$i
@@ -98,7 +81,7 @@ do
 		echo "JPG_URL="$JPG_URL
 		PROG=$[$i + 1]
 		echo "0 Downloading $[$PROG - $BEGIN_NUM] of $NUM_OF_ITEM" >&3
-		echo "================= Downloading item "$[$PROG - $BEGIN_NUM]" of "  $NUM_OF_ITEM "================="
+		echo "== Downloading item "\$[$PROG - $BEGIN_NUM]" of "  $NUM_OF_ITEM "=="
 		sleep $DELAY
 		curl -e $IN_URL -o $[$PROG - $BEGIN_NUM]".jpg" $JPG_URL
 		i=$[$i + 1]
@@ -111,7 +94,7 @@ do
 			sed 's/^.*file=//g' | sed 's/",.*$//g'`
 			PROG=$[$i + 1]
 			echo "0 Downloading $[$PROG - $BEGIN_NUM] of $NUM_OF_ITEM" >&3
-		 	echo "================= Downloading item "$[$PROG - $BEGIN_NUM] " of "  $NUM_OF_ITEM "================="
+		 	echo "== Downloading item "$[$PROG - $BEGIN_NUM] " of "  $NUM_OF_ITEM "=="
 			sleep $DELAY
 			curl -e "http://www.wretch.cc" -o $[$PROG - $BEGIN_NUM]".flv" $FLV_URL
 			i=$[$i + 1]
@@ -124,7 +107,7 @@ do
 				sed 's/^.*", ".//g' | sed 's/").*//g'`
 				PROG=$[$i + 1]
 				echo "0 Downloading $[$PROG - $BEGIN_NUM] of $NUM_OF_ITEM" >&3
-		 		echo "================= Downloading item "$[$PROG - $BEGIN_NUM] " of "  $NUM_OF_ITEM "================="
+		 		echo "== Downloading item "$[$PROG - $BEGIN_NUM] " of "  $NUM_OF_ITEM "=="
 				sleep $DELAY
 				curl -e "http://www.wretch.cc" -o $[$PROG - $BEGIN_NUM]".mp3" $MP3_URL
 				i=$[$i + 1]
@@ -143,15 +126,11 @@ do
 done
 
 
-exec 3>&-
-wait
-rm -f /tmp/hpipe
 rm ./wretch_album.html
 rm ./wretch_tmp.html
 rm ./wretch_tmp2.html
 if [ "$SUCCESS" -eq "0" ]; then
-	$1/Contents/Resources/$CD bubble --debug --title "Fail" --text "Album is Protected!"
+	echo "Album is Protected!"
 else
-	$1/Contents/Resources/$CD bubble --debug --title "Done" --text "All items have been successfully downloaded!"
+	echo "All items have been successfully downloaded!"
 fi
-open ./
