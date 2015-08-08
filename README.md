@@ -9,3 +9,5 @@ This project was the longest lived Wretch.cc photo album downloader on OSX/UNIX,
 
 To use the UNIX version, checkout UNIX branch and download iGetwretch.sh. 
 To use OSX GUI, checkout OSX branch and unzip the iGetWretch.zip
+
+GUI is powered by Cocoa Dialogue: http://mstratman.github.io/cocoadialog/
